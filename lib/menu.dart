@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+/// Home page of the MyPortfolio app.
+///
+/// Shows the owner's identity in three [InfoCard]s and a grid of [ItemCard]s
+/// for the portfolio actions. It is a [StatelessWidget] because nothing on
+/// this page changes while the app is running.
 class MyHomePage extends StatelessWidget {
   MyHomePage({super.key});
 
@@ -81,7 +86,9 @@ class MyHomePage extends StatelessWidget {
 }
 
 class InfoCard extends StatelessWidget {
-  // Information card displaying a title and its associated content.
+  /// Small card that shows one piece of information, like my NPM.
+  ///
+  /// [title] is the bold label on top and [content] is the value below it.
   final String title;
   final String content;
 
@@ -106,14 +113,28 @@ class InfoCard extends StatelessWidget {
   }
 }
 
+/// Data model for one action button on the home page.
+///
+/// The [color] lives here instead of inside [ItemCard], so every button can
+/// have its own color without any if-else in the widget.
 class ItemHomepage {
+  /// Text shown on the button, also used in the SnackBar message.
   final String name;
+
+  /// Icon shown above the text.
   final IconData icon;
+
+  /// Background color of the button and of its SnackBar.
   final Color color;
 
   ItemHomepage(this.name, this.icon, this.color);
 }
 
+
+/// Tappable card for one [ItemHomepage].
+///
+/// Tapping it shows a SnackBar with the message
+/// "You pressed the [name] button!" in the card's color.
 class ItemCard extends StatelessWidget {
   final ItemHomepage item;
 

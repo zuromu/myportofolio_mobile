@@ -5,6 +5,8 @@ void main() {
   runApp(const MyApp());
 }
 
+/// Root widget of the app. It sets up [MaterialApp] with the theme and
+/// the home page from `menu.dart`.
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
