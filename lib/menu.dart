@@ -11,6 +11,7 @@ class MyHomePage extends StatelessWidget {
     ItemHomepage("View Projects", Icons.folder, Colors.blue),
     ItemHomepage("Add Project", Icons.add_circle, Colors.green),
     ItemHomepage("Logout", Icons.logout, Colors.red),
+    ItemHomepage("View Skills", Icons.star, Colors.orange),
   ];
 
   @override
@@ -125,7 +126,11 @@ class ItemCard extends StatelessWidget {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(
-              SnackBar(content: Text("You pressed the ${item.name} button!")),
+              SnackBar(
+                content: Text("You pressed the ${item.name} button!"),
+                backgroundColor: item.color,
+                duration: const Duration(seconds: 2),
+              ),
             );
         },
         child: Container(
