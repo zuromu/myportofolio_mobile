@@ -2,6 +2,8 @@
 
 A Flutter mobile app for my personal portfolio, built for the Platform-Based Programming course at Universitas Indonesia. It is the mobile side of my portfolio website, and it lives in its own repository, separate from the Django project.
 
+- Web version (Django): https://github.com/zuromu/PlatformBasedDevelopment
+
 ## What the app does
 
 - Shows 3 info cards at the top with my NPM, my name and my class.
