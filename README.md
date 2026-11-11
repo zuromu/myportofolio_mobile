@@ -74,8 +74,6 @@ Hot reload puts the new code into the running app and rebuilds the widgets, and 
 
 ## AI Usage Disclosure
 
-## AI Usage Disclosure
-
 I used Claude to understand the concepts behind the reflective questions.
 - **Prompt Strategy:** I asked 7 concept questions about the widget tree, Stateless vs Stateful widgets, BuildContext, MaterialApp, the RenderFlex overflow error, hot reload and the ItemHomepage color design.
 - **Limitations & Manual Fixes:** I wrote the code, tests, README answers and commit messages myself and checked them with `flutter analyze` and `flutter test`.
