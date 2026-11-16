@@ -16,6 +16,17 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
 
   String _title = "";
   String _description = "";
+  String _category = "Full-Time"; // default, same as the Django model
+  String _thumbnail = "";
+
+  final List<String> _categories = [
+    'Internship',
+    'Research',
+    'Volunteer',
+    'Part-Time',
+    'Full-Time',
+    'Freelance',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +91,68 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
                   validator: (String? value) {
                     if (value == null || value.trim().isEmpty) {
                       return "Enter an experience description.";
+                    }
+                    return null;
+                  },
+                ),
+              ),
+
+              // === Category ===
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: DropdownButtonFormField<String>(
+                  decoration: InputDecoration(
+                    labelText: "Experience Category",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5.0),
+                    ),
+                  ),
+                  initialValue: _category,
+                  items: _categories
+                      .map(
+                        (category) => DropdownMenuItem(
+                          value: category,
+                          child: Text(category),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _category = newValue!;
+                    });
+                  },
+                ),
+              ),
+
+              // === Thumbnail URL ===
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextFormField(
+                  keyboardType: TextInputType.url,
+                  decoration: InputDecoration(
+                    hintText: "https://example.com/photo.jpg (optional)",
+                    labelText: "Experience Thumbnail URL",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5.0),
+                    ),
+                  ),
+                  onChanged: (String? value) {
+                    setState(() {
+                      _thumbnail = value!;
+                    });
+                  },
+                  validator: (String? value) {
+                    // The thumbnail is optional, like in the Django model.
+                    if (value == null || value.trim().isEmpty) {
+                      return null;
+                    }
+                    final uri = Uri.tryParse(value.trim());
+                    final isValid =
+                        uri != null &&
+                        (uri.scheme == 'http' || uri.scheme == 'https') &&
+                        uri.host.isNotEmpty;
+                    if (!isValid) {
+                      return "Enter a valid URL starting with http:// or https://";
                     }
                     return null;
                   },
