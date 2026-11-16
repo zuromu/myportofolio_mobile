@@ -133,7 +133,6 @@ class ItemHomepage {
   ItemHomepage(this.name, this.icon, this.color);
 }
 
-
 /// Tappable card for one [ItemHomepage].
 ///
 /// Tapping it shows a SnackBar with the message
