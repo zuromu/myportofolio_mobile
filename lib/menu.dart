@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/widgets/left_drawer.dart';
+import 'package:myportofolio_mobile/project_form.dart';
 
 /// Home page of the MyPortfolio app.
 ///
@@ -158,6 +159,14 @@ class ItemCard extends StatelessWidget {
                 duration: const Duration(seconds: 2),
               ),
             );
+
+          // Navigate to the appropriate screen
+          if (item.name == "Add Project") {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProjectFormPage()),
+            );
+          }
         },
         child: Container(
           padding: const EdgeInsets.all(8),
