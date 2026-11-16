@@ -28,6 +28,44 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
     'Freelance',
   ];
 
+  DateTime? _startDate;
+  DateTime? _endDate;
+
+  final _startController = TextEditingController();
+  final _endController = TextEditingController();
+
+  @override
+  void dispose() {
+    _startController.dispose();
+    _endController.dispose();
+    super.dispose();
+  }
+
+  String _formatDate(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return "${date.year}-$month-$day";
+  }
+
+  Future<void> _pickDate({required bool isStart}) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: (isStart ? _startDate : _endDate) ?? DateTime.now(),
+      firstDate: DateTime(1990),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null) return;
+    setState(() {
+      if (isStart) {
+        _startDate = picked;
+        _startController.text = _formatDate(picked);
+      } else {
+        _endDate = picked;
+        _endController.text = _formatDate(picked);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -153,6 +191,66 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
                         uri.host.isNotEmpty;
                     if (!isValid) {
                       return "Enter a valid URL starting with http:// or https://";
+                    }
+                    return null;
+                  },
+                ),
+              ),
+
+              // === Start Date ===
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextFormField(
+                  controller: _startController,
+                  readOnly: true,
+                  onTap: () => _pickDate(isStart: true),
+                  decoration: InputDecoration(
+                    hintText: "Tap to pick a date",
+                    labelText: "Start Date",
+                    suffixIcon: const Icon(Icons.calendar_today),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5.0),
+                    ),
+                  ),
+                  validator: (String? value) {
+                    if (_startDate == null) {
+                      return "Pick a start date.";
+                    }
+                    return null;
+                  },
+                ),
+              ),
+
+              // === End Date (optional) ===
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextFormField(
+                  controller: _endController,
+                  readOnly: true,
+                  onTap: () => _pickDate(isStart: false),
+                  decoration: InputDecoration(
+                    hintText: "Tap to pick a date (empty = ongoing)",
+                    labelText: "End Date",
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        setState(() {
+                          _endDate = null;
+                          _endController.clear();
+                        });
+                      },
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5.0),
+                    ),
+                  ),
+                  validator: (String? value) {
+                    // Optional, like ended_at in the Django model.
+                    if (_endDate == null || _startDate == null) {
+                      return null;
+                    }
+                    if (_endDate!.isBefore(_startDate!)) {
+                      return "End date can't be before the start date.";
                     }
                     return null;
                   },
