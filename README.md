@@ -7,8 +7,10 @@ A Flutter mobile app for my personal portfolio, built for the Platform-Based Pro
 ## What the app does
 
 - Shows 3 info cards at the top with my NPM, my name and my class.
-- Shows a menu of cards (View Projects, Add Project, Logout, View Skills). Each card has its own icon and color.
-- Pressing a card shows a SnackBar that says "You pressed the [Button Name] button!", in the same color as the card.
+- Shows a menu of cards (View Projects, Add Project, Add Experience, Logout, View Skills). Each card has its own icon and color.
+- Pressing a card shows a SnackBar that says "You pressed the [Button Name] button!". Add Project and Add Experience then open their forms.
+- A drawer (Home, Add Project, Add Experience) is on every screen.
+- The Add Project and Add Experience forms check every field and show a summary dialog when the input is valid.
 
 ## How to run it
 
