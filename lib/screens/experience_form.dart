@@ -48,10 +48,16 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
   }
 
   Future<void> _pickDate({required bool isStart}) async {
+    final firstDate = isStart ? DateTime(1990) : (_startDate ?? DateTime(1990));
+    var initialDate =
+        (isStart ? _startDate : _endDate) ?? _startDate ?? DateTime.now();
+    if (initialDate.isBefore(firstDate)) {
+      initialDate = firstDate;
+    }
     final picked = await showDatePicker(
       context: context,
-      initialDate: (isStart ? _startDate : _endDate) ?? DateTime.now(),
-      firstDate: DateTime(1990),
+      initialDate: initialDate,
+      firstDate: firstDate,
       lastDate: DateTime(2100),
     );
     if (picked == null) return;
