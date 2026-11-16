@@ -19,6 +19,7 @@ class MyHomePage extends StatelessWidget {
     ItemHomepage("Add Project", Icons.add_circle, Colors.green),
     ItemHomepage("Logout", Icons.logout, Colors.red),
     ItemHomepage("View Skills", Icons.star, Colors.orange),
+    ItemHomepage("Add Experience", Icons.work, Colors.purple),
   ];
 
   @override
