@@ -20,9 +20,11 @@ A Flutter mobile app for my personal portfolio, built for the Platform-Based Pro
 
 ## Project structure
 
-- `lib/main.dart`: starts the app and sets up `MaterialApp` with the theme.
-- `lib/menu.dart`: the home page (`MyHomePage`), plus `InfoCard`, `ItemHomepage` and `ItemCard`.
-- `test/widget_test.dart`: widget tests for the home page.
+- `lib/screens/menu.dart`: the home page (`MyHomePage`), plus `InfoCard` and `ItemHomepage`.
+- `lib/screens/project_form.dart`: the Add Project form.
+- `lib/screens/experience_form.dart`: the Add Experience form.
+- `lib/widgets/left_drawer.dart`: the drawer used on every screen.
+- `lib/widgets/project_card.dart`: `ItemCard`, the tappable card on the home screen.
 
 ## Weekly progress
 
@@ -36,6 +38,15 @@ A Flutter mobile app for my personal portfolio, built for the Platform-Based Pro
 - Fixed a bottom overflow by making the page scrollable.
 - Replaced the default counter test with tests for my page.
 - Worked with feature branches and conventional commits (`feat:`, `fix:`, `test:`, `docs:`).
+
+### Week 9 (Tutorial 09 and Assignment 8)
+
+- Added a drawer (`LeftDrawer`) with Home, Add Project and Add Experience.
+- Built the Add Project form from Tutorial 09 with validation and a summary dialog.
+- Moved the code into `lib/screens/` and `lib/widgets/`.
+- For Assignment 8 I built an Add Experience form that follows the Experience model of my Django site (title, description, category, thumbnail URL, start date, end date).
+- Added an Add Experience action card on the home screen and a drawer entry for it.
+- Switched all imports to `package:material_ui/material_ui.dart` because my Flutter version is 3.47.
 
 ### Assignment 7
 
@@ -80,3 +91,25 @@ I used Claude to understand the concepts behind the reflective questions.
 - **Prompt Strategy:** I asked 7 concept questions about the widget tree, Stateless vs Stateful widgets, BuildContext, MaterialApp, the RenderFlex overflow error, hot reload and the ItemHomepage color design.
 - **Limitations & Manual Fixes:** I wrote the code, tests, README answers and commit messages myself and checked them with `flutter analyze` and `flutter test`.
 - **AI Chat Log:** https://claude.ai/share/8f54c06e-5e82-4c59-b7be-6316179d06e1
+
+
+### Assignment 8
+
+1. **Explain the differences between `Navigator.push()`, `Navigator.pushReplacement()`, and `Navigator.pop()`. Which method opens the form from the action card? Explain how the Home option in the drawer takes the user back to the home screen.**
+`Navigator.push()` adds a new route on top of the stack, so the old screen stays underneath and Back returns to it. `Navigator.pushReplacement()` replaces the top route with a new one, so there is no old screen to go back to. `Navigator.pop()` removes the top route and shows the one below it. The action card uses `Navigator.push()`, so the system Back button returns to the home screen. The Home option in the drawer calls `pushReplacement()` with `MyHomePage()`, so it swaps the current form for the home screen.
+
+2. **How does the arrangement of `Scaffold`, `AppBar`, and `Drawer` keep the page structure consistent? Give one example of the portfolio theme colors being used on more than one page.**
+Every page uses a `Scaffold` with an `AppBar`, a `drawer` and a `body`, so each page has the same structure. The same `LeftDrawer` widget is used on the home screen, the Add Project form and the Add Experience form, so I only wrote the menu once. The indigo theme color shows up on more than one page: the drawer header, the AppBar and Save button of both forms, and the home AppBar (which uses the primary color from the indigo seed).
+
+3. **Why was this layout chosen for the form? Explain what the spacing and scrolling widgets do when screen space is limited.**
+I used `Form` > `SingleChildScrollView` > `Column`, with a `Padding` of 8 around every field. The padding gives space between fields so the form is easy to read. The `Column` does not scroll by itself, so `SingleChildScrollView` lets the user scroll when the screen is small or the keyboard is open. That way the Save button is still reachable. The dialog content is also in a `SingleChildScrollView` so a long description does not overflow.
+
+4. **What roles do `GlobalKey<FormState>`, `validator`, and `validate()` play when Save is pressed? Give one example of a value the form rejects and explain why choosing an input widget or keyboard type alone is insufficient.**
+`GlobalKey<FormState>` is attached to the `Form`, so the Save button can reach the form state from outside the widgets. Each `validator` checks one field and returns an error message, or `null` if it is fine. When Save is pressed, `validate()` runs every validator, shows the error text next to the invalid fields, and returns `true` only if all pass. For example, the form rejects a title with only spaces, a thumbnail like `abc`, or an end date before the start date. Choosing an input widget or keyboard type is not enough. `TextInputType.url` only changes the keyboard, and the user can still paste anything. Also, a date picker cannot know that the end date must not come before the start date.
+
+## AI Usage Disclosure
+
+I used Claude to understand the concepts behind the Assignment 8 reflective questions.
+- **Prompt Strategy:** I asked 6 concept questions about the Navigator stack (push, pushReplacement and pop), why a form needs a `StatefulWidget` and a `GlobalKey<FormState>`, what `validate()` does and why a `validator` returns `null` for valid input, why a `Column` overflows on small screens and how `SingleChildScrollView` fixes it, how `showDatePicker()` works with `async` and `await`, and what the `drawer` property does and why one `LeftDrawer` is reused on every page.
+- **Limitations & Manual Fixes:** I wrote the code, tests and README answers myself, and I checked the code with `flutter analyze` and `flutter test`.
+- **AI Chat Log:** https://claude.ai/share/9b67aa38-c8c8-4b36-bb2f-7e477df9d813
