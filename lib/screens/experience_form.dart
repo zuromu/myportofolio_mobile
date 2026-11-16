@@ -77,6 +77,7 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
       drawer: const LeftDrawer(),
       body: Form(
         key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
