@@ -256,6 +256,75 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
                   },
                 ),
               ),
+
+              // === Save Button ===
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ElevatedButton(
+                    style: ButtonStyle(
+                      backgroundColor: WidgetStateProperty.all(Colors.indigo),
+                    ),
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: const Text(
+                                'Experience added successfully!',
+                              ),
+                              content: SingleChildScrollView(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Title: ${_title.trim()}'),
+                                    Text('Description: ${_description.trim()}'),
+                                    Text('Category: $_category'),
+                                    Text(
+                                      'Thumbnail: ${_thumbnail.trim().isEmpty ? "-" : _thumbnail.trim()}',
+                                    ),
+                                    Text(
+                                      'Start Date: ${_formatDate(_startDate!)}',
+                                    ),
+                                    Text(
+                                      'End Date: ${_endDate == null ? "Ongoing" : _formatDate(_endDate!)}',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  child: const Text('OK'),
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    _formKey.currentState!.reset();
+                                    setState(() {
+                                      _title = "";
+                                      _description = "";
+                                      _category = "Full-Time";
+                                      _thumbnail = "";
+                                      _startDate = null;
+                                      _endDate = null;
+                                      _startController.clear();
+                                      _endController.clear();
+                                    });
+                                  },
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      }
+                    },
+                    child: const Text(
+                      "Save",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
