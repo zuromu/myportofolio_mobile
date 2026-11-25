@@ -31,3 +31,13 @@ class Experience {
 
   Map<String, dynamic> toJson() => _$ExperienceToJson(this);
 }
+
+/// Category values used by Django, with the labels shown in the app.
+const Map<String, String> experienceCategories = {
+  'internship': 'Internship',
+  'research': 'Research',
+  'volunteer': 'Volunteer',
+  'part-time': 'Part-Time',
+  'full-time': 'Full-Time',
+  'freelance': 'Freelance',
+};
