@@ -1,5 +1,10 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:myportofolio_mobile/models/project.dart';
+import 'package:myportofolio_mobile/services/api_client.dart';
+import 'package:myportofolio_mobile/services/auth_state.dart';
+import 'package:myportofolio_mobile/widgets/auth_guard.dart';
 import 'package:myportofolio_mobile/widgets/left_drawer.dart';
+import 'package:provider/provider.dart';
 
 class ProjectFormPage extends StatefulWidget {
   const ProjectFormPage({super.key});
@@ -11,19 +16,96 @@ class ProjectFormPage extends StatefulWidget {
 class _ProjectFormPageState extends State<ProjectFormPage> {
   final _formKey = GlobalKey<FormState>();
 
-  String _projectName = "";
+  String _name = "";
   String _description = "";
-  String _category = "Web Development"; // default
-  String _technologies = "";
-  String _projectLink = "";
+  String _techStack = "";
+  String _githubUrl = "";
+  bool _isSubmitting = false;
 
-  final List<String> _categories = [
-    'Web Development',
-    'Mobile Development',
-    'Machine Learning',
-    'Data Science',
-    'Other',
-  ];
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final loggedIn = await ensureLoggedIn(context);
+    if (!loggedIn || !mounted) return;
+
+    final auth = context.read<AuthState>();
+    final apiClient = context.read<ApiClient>();
+    final newProject = Project(
+      name: _name.trim(),
+      techStack: _techStack.trim(),
+      description: _description.trim(),
+      githubUrl: _githubUrl.trim(),
+    );
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final created = await apiClient.createProject(
+        newProject,
+        token: auth.token!,
+      );
+      if (!mounted) return;
+      await _showSuccess(created);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      if (e.statusCode == 401) {
+        await auth.logout();
+        if (!mounted) return;
+        _showError('Your session ended. Log in, then press Save again.');
+        await ensureLoggedIn(context);
+      } else {
+        _showError('Could not save the project (${e.statusCode}).');
+      }
+    } catch (_) {
+      if (!mounted) return;
+      _showError('Could not reach the server.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _showSuccess(Project project) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Project added successfully!'),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Project Name: ${project.name}'),
+                Text('Description: ${project.description}'),
+                Text('Tech Stack: ${project.techStack}'),
+                Text('GitHub URL: ${project.githubUrl}'),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _formKey.currentState!.reset();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,12 +135,15 @@ class _ProjectFormPageState extends State<ProjectFormPage> {
                   ),
                   onChanged: (String? value) {
                     setState(() {
-                      _projectName = value!;
+                      _name = value!;
                     });
                   },
                   validator: (String? value) {
                     if (value == null || value.trim().isEmpty) {
                       return "Enter a project name.";
+                    }
+                    if (value.trim().length > 255) {
+                      return "Use at most 255 characters.";
                     }
                     return null;
                   },
@@ -91,67 +176,62 @@ class _ProjectFormPageState extends State<ProjectFormPage> {
                 ),
               ),
 
-              // === Category ===
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: DropdownButtonFormField<String>(
-                  decoration: InputDecoration(
-                    labelText: "Project Category",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5.0),
-                    ),
-                  ),
-                  initialValue: _category,
-                  items: _categories
-                      .map(
-                        (category) => DropdownMenuItem(
-                          value: category,
-                          child: Text(category),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _category = newValue!;
-                    });
-                  },
-                ),
-              ),
-
-              // === Technologies ===
+              // === Tech Stack ===
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: TextFormField(
                   decoration: InputDecoration(
                     hintText: "Example: Flutter, Django, Figma",
-                    labelText: "Technologies Used",
+                    labelText: "Tech Stack",
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(5.0),
                     ),
                   ),
                   onChanged: (String? value) {
                     setState(() {
-                      _technologies = value!;
+                      _techStack = value!;
                     });
+                  },
+                  validator: (String? value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return "Enter the tech stack.";
+                    }
+                    if (value.trim().length > 255) {
+                      return "Use at most 255 characters.";
+                    }
+                    return null;
                   },
                 ),
               ),
 
-              // === Project Link ===
+              // === GitHub URL ===
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: TextFormField(
+                  keyboardType: TextInputType.url,
                   decoration: InputDecoration(
-                    hintText: "Project URL (optional)",
-                    labelText: "Project Link",
+                    hintText: "https://github.com/you/project (optional)",
+                    labelText: "GitHub URL",
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(5.0),
                     ),
                   ),
                   onChanged: (String? value) {
                     setState(() {
-                      _projectLink = value!;
+                      _githubUrl = value!;
                     });
+                  },
+                  validator: (String? value) {
+                    if (value == null || value.trim().isEmpty) return null;
+                    final uri = Uri.tryParse(value.trim());
+                    final isValid =
+                        uri != null &&
+                        (uri.scheme == 'http' || uri.scheme == 'https') &&
+                        uri.host.isNotEmpty;
+                    if (!isValid) {
+                      return "Enter a valid URL starting with http:// or https://";
+                    }
+                    return null;
                   },
                 ),
               ),
@@ -165,39 +245,7 @@ class _ProjectFormPageState extends State<ProjectFormPage> {
                     style: ButtonStyle(
                       backgroundColor: WidgetStateProperty.all(Colors.indigo),
                     ),
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            return AlertDialog(
-                              title: const Text('Project added successfully!'),
-                              content: SingleChildScrollView(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Project Name: $_projectName'),
-                                    Text('Description: $_description'),
-                                    Text('Category: $_category'),
-                                    Text('Technologies: $_technologies'),
-                                    Text('Link: $_projectLink'),
-                                  ],
-                                ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  child: const Text('OK'),
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                    _formKey.currentState!.reset();
-                                  },
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      }
-                    },
+                    onPressed: _isSubmitting ? null : _submit,
                     child: const Text(
                       "Save",
                       style: TextStyle(color: Colors.white),

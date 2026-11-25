@@ -2,6 +2,10 @@ import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/screens/menu.dart';
 import 'package:myportofolio_mobile/screens/project_form.dart';
 import 'package:myportofolio_mobile/screens/experience_form.dart';
+import 'package:myportofolio_mobile/screens/project_list.dart';
+import 'package:myportofolio_mobile/services/auth_state.dart';
+import 'package:myportofolio_mobile/widgets/auth_guard.dart';
+import 'package:provider/provider.dart';
 
 /// Tappable card for one [ItemHomepage].
 ///
@@ -18,7 +22,26 @@ class ItemCard extends StatelessWidget {
       color: item.color,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
-        onTap: () {
+        onTap: () async {
+          if (item.name == "Logout") {
+            final auth = context.read<AuthState>();
+            final wasLoggedIn = auth.isLoggedIn;
+            await auth.logout();
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                SnackBar(
+                  content: Text(
+                    wasLoggedIn
+                        ? "You are logged out."
+                        : "You are not logged in.",
+                  ),
+                  backgroundColor: item.color,
+                ),
+              );
+            return;
+          }
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(
@@ -30,7 +53,15 @@ class ItemCard extends StatelessWidget {
             );
 
           // Navigate to the appropriate screen
+          if (item.name == "View Projects") {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProjectListPage()),
+            );
+          }
           if (item.name == "Add Project") {
+            final allowed = await ensureLoggedIn(context);
+            if (!allowed || !context.mounted) return;
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const ProjectFormPage()),
