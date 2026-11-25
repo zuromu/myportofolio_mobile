@@ -1,11 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myportofolio_mobile/main.dart';
+import 'package:myportofolio_mobile/services/api_client.dart';
 
 void main() {
   testWidgets('shows my info cards and menu buttons', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(MyApp(apiClient: ApiClient()));
 
     expect(find.text('NPM'), findsOneWidget);
     expect(find.text('2506555400'), findsOneWidget);
@@ -15,7 +16,7 @@ void main() {
   });
 
   testWidgets('tapping a button shows a SnackBar', (WidgetTester tester) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(MyApp(apiClient: ApiClient()));
 
     await tester.tap(find.text('Add Project'));
     await tester.pump();
