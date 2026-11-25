@@ -22,8 +22,8 @@ class AuthState extends ChangeNotifier {
 
     try {
       await _apiClient.logout(token: current);
-    } on ApiException {
-      // The token is already invalid on the server, so only clear it here.
+    } catch (_) {
+      // The token is invalid or the server is down, so only clear it here.
     } finally {
       _token = null;
       notifyListeners();
