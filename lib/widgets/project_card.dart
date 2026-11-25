@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/screens/menu.dart';
 import 'package:myportofolio_mobile/screens/project_form.dart';
 import 'package:myportofolio_mobile/screens/experience_form.dart';
+import 'package:myportofolio_mobile/screens/project_list.dart';
 
 /// Tappable card for one [ItemHomepage].
 ///
@@ -30,6 +31,12 @@ class ItemCard extends StatelessWidget {
             );
 
           // Navigate to the appropriate screen
+          if (item.name == "View Projects") {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProjectListPage()),
+            );
+          }
           if (item.name == "Add Project") {
             Navigator.push(
               context,
