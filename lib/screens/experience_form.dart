@@ -1,5 +1,11 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:myportofolio_mobile/models/experience.dart';
+import 'package:myportofolio_mobile/screens/experience_list.dart';
+import 'package:myportofolio_mobile/services/api_client.dart';
+import 'package:myportofolio_mobile/services/auth_state.dart';
+import 'package:myportofolio_mobile/widgets/auth_guard.dart';
 import 'package:myportofolio_mobile/widgets/left_drawer.dart';
+import 'package:provider/provider.dart';
 
 /// Form page for adding a new experience to the portfolio.
 ///
@@ -13,30 +19,17 @@ class ExperienceFormPage extends StatefulWidget {
 
 class _ExperienceFormPageState extends State<ExperienceFormPage> {
   final _formKey = GlobalKey<FormState>();
-
   String _title = "";
   String _description = "";
-  String _category = "Full-Time"; // default, same as the Django model
+  String _category = "full-time"; // default, same as the Django model
   String _thumbnail = "";
-
-  final List<String> _categories = [
-    'Internship',
-    'Research',
-    'Volunteer',
-    'Part-Time',
-    'Full-Time',
-    'Freelance',
-  ];
-
-  DateTime? _startDate;
   DateTime? _endDate;
+  bool _isSubmitting = false;
 
-  final _startController = TextEditingController();
   final _endController = TextEditingController();
 
   @override
   void dispose() {
-    _startController.dispose();
     _endController.dispose();
     super.dispose();
   }
@@ -47,29 +40,102 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
     return "${date.year}-$month-$day";
   }
 
-  Future<void> _pickDate({required bool isStart}) async {
-    final firstDate = isStart ? DateTime(1990) : (_startDate ?? DateTime(1990));
-    var initialDate =
-        (isStart ? _startDate : _endDate) ?? _startDate ?? DateTime.now();
-    if (initialDate.isBefore(firstDate)) {
-      initialDate = firstDate;
-    }
+  Future<void> _pickEndDate() async {
+    final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: initialDate,
-      firstDate: firstDate,
+      initialDate: _endDate ?? now,
+      // Django sets the start date to today, so the end can't be earlier.
+      firstDate: now,
       lastDate: DateTime(2100),
     );
-    if (picked == null) return;
+    if (picked == null || !mounted) return;
     setState(() {
-      if (isStart) {
-        _startDate = picked;
-        _startController.text = _formatDate(picked);
-      } else {
-        _endDate = picked;
-        _endController.text = _formatDate(picked);
-      }
+      // End of the chosen day, so it is never before the start time.
+      _endDate = DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
+      _endController.text = _formatDate(picked);
     });
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final loggedIn = await ensureLoggedIn(context);
+    if (!loggedIn || !mounted) return;
+
+    final auth = context.read<AuthState>();
+    final apiClient = context.read<ApiClient>();
+    final newExperience = Experience(
+      title: _title.trim(),
+      description: _description.trim(),
+      category: _category,
+      thumbnail: _thumbnail.trim(),
+      endedAt: _endDate?.toUtc(),
+    );
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final created = await apiClient.createExperience(
+        newExperience,
+        token: auth.token!,
+      );
+      if (!mounted) return;
+      await _showSuccess(created);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      if (e.statusCode == 401) {
+        await auth.logout();
+        if (!mounted) return;
+        _showError('Your session ended. Log in, then press Save again.');
+        await ensureLoggedIn(context);
+      } else if (e.statusCode == 403) {
+        _showError('Your account is not allowed to add experience.');
+      } else {
+        _showError('Could not save the experience (${e.statusCode}).');
+      }
+    } catch (_) {
+      if (!mounted) return;
+      _showError('Could not reach the server.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _showSuccess(Experience experience) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Experience added successfully!'),
+          content: Text('Title: ${experience.title}'),
+          actions: [
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () => Navigator.pop(dialogContext),
+            ),
+          ],
+        );
+      },
+    );
+    if (!mounted) return;
+    // Open a fresh list so the new entry shows up.
+    await Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const ExperienceListPage()),
+    );
   }
 
   @override
@@ -153,11 +219,11 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
                     ),
                   ),
                   initialValue: _category,
-                  items: _categories
+                  items: experienceCategories.entries
                       .map(
-                        (category) => DropdownMenuItem(
-                          value: category,
-                          child: Text(category),
+                        (entry) => DropdownMenuItem(
+                          value: entry.key,
+                          child: Text(entry.value),
                         ),
                       )
                       .toList(),
@@ -204,37 +270,13 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
                 ),
               ),
 
-              // === Start Date ===
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: TextFormField(
-                  controller: _startController,
-                  readOnly: true,
-                  onTap: () => _pickDate(isStart: true),
-                  decoration: InputDecoration(
-                    hintText: "Tap to pick a date",
-                    labelText: "Start Date",
-                    suffixIcon: const Icon(Icons.calendar_today),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5.0),
-                    ),
-                  ),
-                  validator: (String? value) {
-                    if (_startDate == null) {
-                      return "Pick a start date.";
-                    }
-                    return null;
-                  },
-                ),
-              ),
-
               // === End Date (optional) ===
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: TextFormField(
                   controller: _endController,
                   readOnly: true,
-                  onTap: () => _pickDate(isStart: false),
+                  onTap: _pickEndDate,
                   decoration: InputDecoration(
                     hintText: "Tap to pick a date (empty = ongoing)",
                     labelText: "End Date",
@@ -251,16 +293,6 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
                       borderRadius: BorderRadius.circular(5.0),
                     ),
                   ),
-                  validator: (String? value) {
-                    // Optional, like ended_at in the Django model.
-                    if (_endDate == null || _startDate == null) {
-                      return null;
-                    }
-                    if (_endDate!.isBefore(_startDate!)) {
-                      return "End date can't be before the start date.";
-                    }
-                    return null;
-                  },
                 ),
               ),
 
@@ -273,58 +305,7 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
                     style: ButtonStyle(
                       backgroundColor: WidgetStateProperty.all(Colors.indigo),
                     ),
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            return AlertDialog(
-                              title: const Text(
-                                'Experience added successfully!',
-                              ),
-                              content: SingleChildScrollView(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Title: ${_title.trim()}'),
-                                    Text('Description: ${_description.trim()}'),
-                                    Text('Category: $_category'),
-                                    Text(
-                                      'Thumbnail: ${_thumbnail.trim().isEmpty ? "-" : _thumbnail.trim()}',
-                                    ),
-                                    Text(
-                                      'Start Date: ${_formatDate(_startDate!)}',
-                                    ),
-                                    Text(
-                                      'End Date: ${_endDate == null ? "Ongoing" : _formatDate(_endDate!)}',
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  child: const Text('OK'),
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                    _formKey.currentState!.reset();
-                                    setState(() {
-                                      _title = "";
-                                      _description = "";
-                                      _category = "Full-Time";
-                                      _thumbnail = "";
-                                      _startDate = null;
-                                      _endDate = null;
-                                      _startController.clear();
-                                      _endController.clear();
-                                    });
-                                  },
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      }
-                    },
+                    onPressed: _isSubmitting ? null : _submit,
                     child: const Text(
                       "Save",
                       style: TextStyle(color: Colors.white),

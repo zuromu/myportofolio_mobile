@@ -1,5 +1,7 @@
 # MyPortfolio Mobile
 
+[![CI](https://github.com/zuromu/myportofolio_mobile/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/zuromu/myportofolio_mobile/actions/workflows/main.yaml)
+
 A Flutter mobile app for my personal portfolio, built for the Platform-Based Programming course at Universitas Indonesia. It is the mobile side of my portfolio website, and it lives in its own repository, separate from the Django project.
 
 - Web version (Django): https://github.com/zuromu/PlatformBasedDevelopment
@@ -7,26 +9,40 @@ A Flutter mobile app for my personal portfolio, built for the Platform-Based Pro
 ## What the app does
 
 - Shows 3 info cards at the top with my NPM, my name and my class.
-- Shows a menu of cards (View Projects, Add Project, Add Experience, Logout, View Skills). Each card has its own icon and color.
-- Pressing a card shows a SnackBar that says "You pressed the [Button Name] button!". Add Project and Add Experience then open their forms.
-- A drawer (Home, Add Project, Add Experience) is on every screen.
-- The Add Project and Add Experience forms check every field and show a summary dialog when the input is valid.
+- Shows a menu of cards (View Projects, Add Project, View Experience, Add Experience, Logout, View Skills). Each card has its own icon and color.
+- Loads my projects and experience from the Django REST API. Anyone can view the lists and open an entry to see all its fields.
+- Adding a project or an experience needs a login. The app gets a token from Django and sends it with every POST.
+- If the token is no longer valid (401), the app clears the session and asks me to log in again.
+- A drawer with Home, View Projects, Add Project, View Experience, Add Experience and Login or Logout is on every screen.
 
 ## How to run it
 
-1. Install the Flutter SDK and set up an emulator or a browser target.
-2. Clone this repository.
-3. Run `flutter pub get`.
-4. Run `flutter run`.
-5. Run `flutter analyze` and `flutter test` to check the code.
+The app needs my Django backend running: https://github.com/zuromu/PlatformBasedDevelopment
+
+1. Start the backend with `python manage.py runserver` in the Django project.
+2. Clone this repository and run `flutter pub get`.
+3. Generate the JSON code for the models (the `*.g.dart` files are not in Git):
+   ```bash
+   dart run build_runner build --delete-conflicting-outputs
+   ```
+4. Run the app. The default API URL is `http://10.0.2.2:8000`, which is the computer's localhost as seen from the Android emulator. In Chrome, pass the URL yourself:
+   ```bash
+   flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8000
+   ```
+5. Check the code with `dart format --output=none --set-exit-if-changed lib`, `flutter analyze` and `flutter test`.
+
+Logging in needs a Django user. Adding an experience needs a superuser account.
 
 ## Project structure
 
-- `lib/screens/menu.dart`: the home page (`MyHomePage`), plus `InfoCard` and `ItemHomepage`.
-- `lib/screens/project_form.dart`: the Add Project form.
-- `lib/screens/experience_form.dart`: the Add Experience form.
-- `lib/widgets/left_drawer.dart`: the drawer used on every screen.
-- `lib/widgets/project_card.dart`: `ItemCard`, the tappable card on the home screen.
+- `lib/main.dart`: provides `ApiClient` and `AuthState` to every screen with `MultiProvider`.
+- `lib/config.dart`: the API base URL, read from `--dart-define=API_BASE_URL`.
+- `lib/models/`: `Project` and `Experience`, made with `@JsonSerializable`.
+- `lib/services/api_client.dart`: all HTTP calls. Throws `ApiException` when the status is not 2xx.
+- `lib/services/auth_state.dart`: keeps the login token in memory.
+- `lib/screens/`: the home page, login, and the list, detail and form screens for projects and experience.
+- `lib/widgets/`: the drawer, the home cards and `ensureLoggedIn()` in `auth_guard.dart`.
+- `test/`: widget tests. `experience_form_test.dart` uses `MockClient`, so it runs without Django.
 
 ## Weekly progress
 
@@ -49,6 +65,16 @@ A Flutter mobile app for my personal portfolio, built for the Platform-Based Pro
 - For Assignment 8 I built an Add Experience form that follows the Experience model of my Django site (title, description, category, thumbnail URL, start date, end date).
 - Added an Add Experience action card on the home screen and a drawer entry for it.
 - Switched all imports to `package:material_ui/material_ui.dart` because my Flutter version is 3.47.
+
+### Week 10 (Tutorial 10 and Assignment 9)
+
+- Added token login to the Django backend (`TokenAuthentication`) and `django-cors-headers` so Chrome can call the API.
+- Added JSON models with `json_serializable`, an `ApiClient` and an `AuthState`, shared with `provider`.
+- Built list and detail screens for projects (Tutorial 10) and for experience (Assignment 9) with `FutureBuilder`, pull to refresh, and loading, error and empty states.
+- The Add Project and Add Experience forms now need a login and send a real POST to Django. Errors show in a SnackBar.
+- Removed the Start Date field from the experience form, because Django sets `started_at` itself when the entry is created.
+- Added a GitHub Actions workflow with `very_good_workflows` and a release APK build. I pinned Flutter 3.47.9 after a newer Flutter version broke the APK build.
+- Added widget tests for the experience form with `MockClient`.
 
 ### Assignment 7
 
@@ -115,3 +141,25 @@ I used Claude to understand the concepts behind the Assignment 8 reflective ques
 - **Prompt Strategy:** I asked 6 concept questions about the Navigator stack (push, pushReplacement and pop), why a form needs a `StatefulWidget` and a `GlobalKey<FormState>`, what `validate()` does and why a `validator` returns `null` for valid input, why a `Column` overflows on small screens and how `SingleChildScrollView` fixes it, how `showDatePicker()` works with `async` and `await`, and what the `drawer` property does and why one `LeftDrawer` is reused on every page.
 - **Limitations & Manual Fixes:** I wrote the code, tests and README answers myself, and I checked the code with `flutter analyze` and `flutter test`.
 - **AI Chat Log:** https://claude.ai/share/9b67aa38-c8c8-4b36-bb2f-7e477df9d813
+
+
+### Assignment 9
+
+1. **Why `@JsonSerializable(fieldRename: FieldRename.snake)` and `@JsonKey(includeToJson: false)` instead of raw maps?**
+With a raw `Map<String, dynamic>`, every widget has to type the JSON keys by hand, and a typo or a wrong type only shows up when the app runs. The generated code does the conversion in one place, and `fieldRename: FieldRename.snake` turns `endedAt` into `ended_at` so the Dart names stay camelCase while Django gets snake_case. `includeToJson: false` keeps fields the server owns, like `id` and `started_at`, out of the POST body. One bug this prevents in my Experience model: if I had written the map by hand with `"endedAt"`, Django would ignore the unknown key and save every experience as ongoing without any error. Another one is `thumbnail`, which Django sends as `null` when it is empty. `@JsonKey(defaultValue: '')` turns that into an empty string, so the detail screen does not crash on a null value.
+
+2. **Why initialize the `Future` in `initState()`, and why throw `ApiException` instead of returning `null`?**
+`build()` can run many times, for example after `setState()`, when the keyboard opens or when the theme changes. If the `Future` were created inside `build()`, every rebuild would send a new GET request and the `FutureBuilder` would go back to the loading spinner. `initState()` runs only once, so the request is sent once and the Retry button and pull to refresh decide when to load again. Throwing `ApiException` makes a failed request a real error. `FutureBuilder` then gets `hasError` and shows the error state with Retry, and the form can check the status code to tell a 401 (log in again) from a 403 (not allowed). If `ApiClient` returned `null`, a server error would look the same as an empty list, and the user would see "No experience found." instead of an error.
+
+3. **`SessionAuthentication` vs `TokenAuthentication`, and why keep both?**
+`SessionAuthentication` uses the session cookie the browser gets after logging in, plus a CSRF token for POST requests. That works well in a browser, which stores and sends cookies by itself. A Flutter app does not keep cookies like a browser does, so `TokenAuthentication` is simpler: the app gets a token once from `/api/v1/auth/token/` and sends `Authorization: Token <key>` in the header of every write request. The backend keeps `SessionAuthentication` enabled so my Django website, the admin and the browsable API still work with a normal login. In my settings `TokenAuthentication` comes first, so a guest or a deleted token gets `401` instead of `403`, and that is the status the app uses to clear the session and ask for a login again.
+
+4. **The `build` and `build_apk` jobs, and why `*.g.dart` is gitignored.**
+The `build` job uses the reusable `flutter_package` workflow from `very_good_workflows`. It installs Flutter 3.47.9, runs `flutter pub get`, runs my setup command (`build_runner`), then checks formatting with `dart format --set-exit-if-changed`, runs `flutter analyze`, and runs `flutter test` with coverage. If any of these fail, the job fails. The `build_apk` job only starts after `build` passes (`needs: build`). It generates the code again, runs `flutter build apk --release`, and uploads the APK as the `app-release-apk` artifact. The `*.g.dart` files are ignored because they are generated from the model classes. Committing them would mean extra files in every diff, merge conflicts, and the risk of an old generated file not matching the model. CI does not need them in Git because both jobs run `build_runner` first and make them fresh.
+
+## AI Usage Disclosure
+
+I used Claude to help me understand concepts while doing this assignment.
+- **Prompt Strategy:** I asked 7 concept questions about json_serializable (`FieldRename.snake` and `includeToJson: false`), creating the FutureBuilder Future in `initState()`, DRF SessionAuthentication vs TokenAuthentication, why Flutter web needs `django-cors-headers`, handling 401 vs 403, testing API calls with `MockClient`, and what the `very_good_workflows` flutter_package workflow checks along with why `*.g.dart` files are gitignored.
+- **Limitations & Manual Fixes:** I wrote the code, tests, README answers and commit messages myself and checked them with `flutter analyze` and `flutter test`.
+- **AI Chat Log:** https://claude.ai/share/237fb3f9-a639-4034-abdb-500c232f251d
