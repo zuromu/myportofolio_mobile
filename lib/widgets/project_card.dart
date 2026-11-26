@@ -77,6 +77,8 @@ class ItemCard extends StatelessWidget {
             );
           }
           if (item.name == "Add Experience") {
+            final allowed = await ensureLoggedIn(context);
+            if (!allowed || !context.mounted) return;
             Navigator.push(
               context,
               MaterialPageRoute(

@@ -95,7 +95,9 @@ class LeftDrawer extends StatelessWidget {
             leading: const Icon(Icons.work_outline),
             title: const Text('Add Experience'),
             // Navigate to the Add Experience screen
-            onTap: () {
+            onTap: () async {
+              final allowed = await ensureLoggedIn(context);
+              if (!allowed || !context.mounted) return;
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
