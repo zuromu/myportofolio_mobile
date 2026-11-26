@@ -1,5 +1,7 @@
 # MyPortfolio Mobile
 
+[![CI](https://github.com/zuromu/myportofolio_mobile/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/zuromu/myportofolio_mobile/actions/workflows/main.yaml)
+
 A Flutter mobile app for my personal portfolio, built for the Platform-Based Programming course at Universitas Indonesia. It is the mobile side of my portfolio website, and it lives in its own repository, separate from the Django project.
 
 - Web version (Django): https://github.com/zuromu/PlatformBasedDevelopment
@@ -7,26 +9,40 @@ A Flutter mobile app for my personal portfolio, built for the Platform-Based Pro
 ## What the app does
 
 - Shows 3 info cards at the top with my NPM, my name and my class.
-- Shows a menu of cards (View Projects, Add Project, Add Experience, Logout, View Skills). Each card has its own icon and color.
-- Pressing a card shows a SnackBar that says "You pressed the [Button Name] button!". Add Project and Add Experience then open their forms.
-- A drawer (Home, Add Project, Add Experience) is on every screen.
-- The Add Project and Add Experience forms check every field and show a summary dialog when the input is valid.
+- Shows a menu of cards (View Projects, Add Project, View Experience, Add Experience, Logout, View Skills). Each card has its own icon and color.
+- Loads my projects and experience from the Django REST API. Anyone can view the lists and open an entry to see all its fields.
+- Adding a project or an experience needs a login. The app gets a token from Django and sends it with every POST.
+- If the token is no longer valid (401), the app clears the session and asks me to log in again.
+- A drawer with Home, View Projects, Add Project, View Experience, Add Experience and Login or Logout is on every screen.
 
 ## How to run it
 
-1. Install the Flutter SDK and set up an emulator or a browser target.
-2. Clone this repository.
-3. Run `flutter pub get`.
-4. Run `flutter run`.
-5. Run `flutter analyze` and `flutter test` to check the code.
+The app needs my Django backend running: https://github.com/zuromu/PlatformBasedDevelopment
+
+1. Start the backend with `python manage.py runserver` in the Django project.
+2. Clone this repository and run `flutter pub get`.
+3. Generate the JSON code for the models (the `*.g.dart` files are not in Git):
+   ```bash
+   dart run build_runner build --delete-conflicting-outputs
+   ```
+4. Run the app. The default API URL is `http://10.0.2.2:8000`, which is the computer's localhost as seen from the Android emulator. In Chrome, pass the URL yourself:
+   ```bash
+   flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8000
+   ```
+5. Check the code with `dart format --output=none --set-exit-if-changed lib`, `flutter analyze` and `flutter test`.
+
+Logging in needs a Django user. Adding an experience needs a superuser account.
 
 ## Project structure
 
-- `lib/screens/menu.dart`: the home page (`MyHomePage`), plus `InfoCard` and `ItemHomepage`.
-- `lib/screens/project_form.dart`: the Add Project form.
-- `lib/screens/experience_form.dart`: the Add Experience form.
-- `lib/widgets/left_drawer.dart`: the drawer used on every screen.
-- `lib/widgets/project_card.dart`: `ItemCard`, the tappable card on the home screen.
+- `lib/main.dart`: provides `ApiClient` and `AuthState` to every screen with `MultiProvider`.
+- `lib/config.dart`: the API base URL, read from `--dart-define=API_BASE_URL`.
+- `lib/models/`: `Project` and `Experience`, made with `@JsonSerializable`.
+- `lib/services/api_client.dart`: all HTTP calls. Throws `ApiException` when the status is not 2xx.
+- `lib/services/auth_state.dart`: keeps the login token in memory.
+- `lib/screens/`: the home page, login, and the list, detail and form screens for projects and experience.
+- `lib/widgets/`: the drawer, the home cards and `ensureLoggedIn()` in `auth_guard.dart`.
+- `test/`: widget tests. `experience_form_test.dart` uses `MockClient`, so it runs without Django.
 
 ## Weekly progress
 
@@ -49,6 +65,16 @@ A Flutter mobile app for my personal portfolio, built for the Platform-Based Pro
 - For Assignment 8 I built an Add Experience form that follows the Experience model of my Django site (title, description, category, thumbnail URL, start date, end date).
 - Added an Add Experience action card on the home screen and a drawer entry for it.
 - Switched all imports to `package:material_ui/material_ui.dart` because my Flutter version is 3.47.
+
+### Week 10 (Tutorial 10 and Assignment 9)
+
+- Added token login to the Django backend (`TokenAuthentication`) and `django-cors-headers` so Chrome can call the API.
+- Added JSON models with `json_serializable`, an `ApiClient` and an `AuthState`, shared with `provider`.
+- Built list and detail screens for projects (Tutorial 10) and for experience (Assignment 9) with `FutureBuilder`, pull to refresh, and loading, error and empty states.
+- The Add Project and Add Experience forms now need a login and send a real POST to Django. Errors show in a SnackBar.
+- Removed the Start Date field from the experience form, because Django sets `started_at` itself when the entry is created.
+- Added a GitHub Actions workflow with `very_good_workflows` and a release APK build. I pinned Flutter 3.47.9 after a newer Flutter version broke the APK build.
+- Added widget tests for the experience form with `MockClient`.
 
 ### Assignment 7
 
